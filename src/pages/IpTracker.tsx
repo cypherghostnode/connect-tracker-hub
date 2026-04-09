@@ -4,6 +4,17 @@ import TrackerLayout from "@/components/TrackerLayout";
 import TerminalCard from "@/components/TerminalCard";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+
+// Fix default marker icon
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
+  iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png",
+  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
+});
 
 interface IpData {
   ip: string;
@@ -16,11 +27,23 @@ interface IpData {
   postal: string;
 }
 
+const MapUpdater = ({ center }: { center: [number, number] }) => {
+  const map = useMap();
+  map.flyTo(center, 13, { duration: 1.5 });
+  return null;
+};
+
 const IpTracker = () => {
   const [ip, setIp] = useState("");
   const [data, setData] = useState<IpData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const getCoords = (): [number, number] | null => {
+    if (!data?.loc) return null;
+    const [lat, lng] = data.loc.split(",").map(Number);
+    return [lat, lng];
+  };
 
   const track = async () => {
     if (!ip.trim()) return;
@@ -39,6 +62,8 @@ const IpTracker = () => {
       setLoading(false);
     }
   };
+
+  const coords = getCoords();
 
   return (
     <TrackerLayout>
@@ -65,29 +90,55 @@ const IpTracker = () => {
         </TerminalCard>
 
         {data && (
-          <TerminalCard title="results.json">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-              {[
-                { icon: Globe, label: "IP", value: data.ip },
-                { icon: MapPin, label: "Location", value: `${data.city}, ${data.region}, ${data.country}` },
-                { icon: Server, label: "ISP", value: data.org },
-                { icon: MapPin, label: "Coordinates", value: data.loc },
-                { icon: Globe, label: "Timezone", value: data.timezone },
-                { icon: MapPin, label: "Postal", value: data.postal },
-              ].map((item, i) => {
-                const Icon = item.icon;
-                return (
-                  <div key={i} className="flex items-start gap-2">
-                    <Icon size={14} className="text-primary mt-0.5 shrink-0" />
-                    <div>
-                      <span className="text-muted-foreground text-xs">{item.label}</span>
-                      <p className="text-foreground text-xs">{item.value || "N/A"}</p>
+          <>
+            {coords && (
+              <TerminalCard title="geo-map.render">
+                <div className="rounded overflow-hidden border border-border" style={{ height: 300 }}>
+                  <MapContainer
+                    center={coords}
+                    zoom={13}
+                    style={{ height: "100%", width: "100%" }}
+                    zoomControl={false}
+                  >
+                    <TileLayer
+                      attribution='&copy; <a href="https://carto.com/">CARTO</a>'
+                      url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                    />
+                    <Marker position={coords}>
+                      <Popup>
+                        <span className="text-xs font-mono">{data.ip} — {data.city}, {data.country}</span>
+                      </Popup>
+                    </Marker>
+                    <MapUpdater center={coords} />
+                  </MapContainer>
+                </div>
+              </TerminalCard>
+            )}
+
+            <TerminalCard title="results.json">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                {[
+                  { icon: Globe, label: "IP", value: data.ip },
+                  { icon: MapPin, label: "Location", value: `${data.city}, ${data.region}, ${data.country}` },
+                  { icon: Server, label: "ISP", value: data.org },
+                  { icon: MapPin, label: "Coordinates", value: data.loc },
+                  { icon: Globe, label: "Timezone", value: data.timezone },
+                  { icon: MapPin, label: "Postal", value: data.postal },
+                ].map((item, i) => {
+                  const Icon = item.icon;
+                  return (
+                    <div key={i} className="flex items-start gap-2">
+                      <Icon size={14} className="text-primary mt-0.5 shrink-0" />
+                      <div>
+                        <span className="text-muted-foreground text-xs">{item.label}</span>
+                        <p className="text-foreground text-xs">{item.value || "N/A"}</p>
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          </TerminalCard>
+                  );
+                })}
+              </div>
+            </TerminalCard>
+          </>
         )}
       </div>
     </TrackerLayout>
