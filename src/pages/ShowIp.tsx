@@ -3,6 +3,22 @@ import { Shield, Globe, MapPin, Server, RefreshCw } from "lucide-react";
 import TrackerLayout from "@/components/TrackerLayout";
 import TerminalCard from "@/components/TerminalCard";
 import { Button } from "@/components/ui/button";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
+  iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png",
+  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
+});
+
+const MapUpdater = ({ center }: { center: [number, number] }) => {
+  const map = useMap();
+  map.flyTo(center, 13, { duration: 1.5 });
+  return null;
+};
 
 const ShowIp = () => {
   const [data, setData] = useState<any>(null);
@@ -21,6 +37,14 @@ const ShowIp = () => {
   };
 
   useEffect(() => { fetchIp(); }, []);
+
+  const getCoords = (): [number, number] | null => {
+    if (!data?.loc) return null;
+    const [lat, lng] = data.loc.split(",").map(Number);
+    return [lat, lng];
+  };
+
+  const coords = getCoords();
 
   return (
     <TrackerLayout>
@@ -52,6 +76,30 @@ const ShowIp = () => {
                 <p className="text-muted-foreground text-xs mt-1">Your public IP address</p>
               </div>
             </TerminalCard>
+
+            {coords && (
+              <TerminalCard title="geo-map.render">
+                <div className="rounded overflow-hidden border border-border" style={{ height: 300 }}>
+                  <MapContainer
+                    center={coords}
+                    zoom={13}
+                    style={{ height: "100%", width: "100%" }}
+                    zoomControl={false}
+                  >
+                    <TileLayer
+                      attribution='&copy; <a href="https://carto.com/">CARTO</a>'
+                      url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                    />
+                    <Marker position={coords}>
+                      <Popup>
+                        <span className="text-xs font-mono">{data.ip} — {data.city}, {data.country}</span>
+                      </Popup>
+                    </Marker>
+                    <MapUpdater center={coords} />
+                  </MapContainer>
+                </div>
+              </TerminalCard>
+            )}
 
             <TerminalCard title="details.json">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
