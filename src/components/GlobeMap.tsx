@@ -1,5 +1,17 @@
-import { useEffect, useRef, useState } from "react";
-import Globe from "react-globe.gl";
+import { useEffect, useRef } from "react";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+
+// Fix default marker icon
+import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
+import markerIcon from "leaflet/dist/images/marker-icon.png";
+import markerShadow from "leaflet/dist/images/marker-shadow.png";
+
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: markerIcon2x,
+  iconUrl: markerIcon,
+  shadowUrl: markerShadow,
+});
 
 interface GlobeMapProps {
   lat: number;
@@ -8,52 +20,51 @@ interface GlobeMapProps {
 }
 
 const GlobeMap = ({ lat, lng, label }: GlobeMapProps) => {
-  const globeRef = useRef<any>(null);
-  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<L.Map | null>(null);
+  const markerRef = useRef<L.Marker | null>(null);
 
   useEffect(() => {
-    if (!containerRef.current) return;
-    const obs = new ResizeObserver(([entry]) => {
-      setDimensions({
-        width: entry.contentRect.width,
-        height: entry.contentRect.height,
-      });
+    if (!containerRef.current || mapRef.current) return;
+
+    const map = L.map(containerRef.current, {
+      center: [lat, lng],
+      zoom: 5,
+      zoomControl: true,
+      scrollWheelZoom: true,
     });
-    obs.observe(containerRef.current);
-    return () => obs.disconnect();
+
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
+      maxZoom: 19,
+    }).addTo(map);
+
+    const marker = L.marker([lat, lng]).addTo(map);
+    if (label) marker.bindPopup(`<div style="font-family:monospace;font-size:12px;color:#0a0a0a">${label}</div>`).openPopup();
+
+    mapRef.current = map;
+    markerRef.current = marker;
+
+    return () => {
+      map.remove();
+      mapRef.current = null;
+      markerRef.current = null;
+    };
   }, []);
 
   useEffect(() => {
-    if (globeRef.current) {
-      globeRef.current.pointOfView({ lat, lng, altitude: 2 }, 1500);
-    }
-  }, [lat, lng]);
-
-  const pointData = [{ lat, lng, label: label || "Target", size: 0.6, color: "#3B82F6" }];
+    if (!mapRef.current || !markerRef.current) return;
+    mapRef.current.flyTo([lat, lng], 5, { duration: 1.5 });
+    markerRef.current.setLatLng([lat, lng]);
+    if (label) markerRef.current.setPopupContent(`<div style="font-family:monospace;font-size:12px;color:#0a0a0a">${label}</div>`).openPopup();
+  }, [lat, lng, label]);
 
   return (
-    <div ref={containerRef} className="w-full" style={{ height: 350 }}>
-      {dimensions.width > 0 && (
-        <Globe
-          ref={globeRef}
-          width={dimensions.width}
-          height={350}
-          globeImageUrl="//cdn.jsdelivr.net/npm/three-globe/example/img/earth-night.jpg"
-          backgroundImageUrl="//cdn.jsdelivr.net/npm/three-globe/example/img/night-sky.png"
-          pointsData={pointData}
-          pointLat="lat"
-          pointLng="lng"
-          pointLabel="label"
-          pointRadius="size"
-          pointColor="color"
-          pointAltitude={0.01}
-          atmosphereColor="#3B82F6"
-          atmosphereAltitude={0.15}
-          animateIn={true}
-        />
-      )}
-    </div>
+    <div
+      ref={containerRef}
+      className="w-full rounded-md overflow-hidden border border-border"
+      style={{ height: 300 }}
+    />
   );
 };
 
