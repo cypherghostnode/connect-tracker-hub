@@ -12,8 +12,17 @@ export default {
         "2xl": "1400px",
       },
     },
+    fontFamily: {
+      mono: ['JetBrains Mono', 'monospace'],
+      display: ['Orbitron', 'sans-serif'],
+    },
     extend: {
       colors: {
+        ghost: {
+          green: 'hsl(120 100% 50%)',
+          dim: 'hsl(120 20% 50%)',
+          dark: 'hsl(0 0% 7%)',
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
