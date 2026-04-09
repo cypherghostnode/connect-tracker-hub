@@ -3,16 +3,7 @@ import { Shield, Globe, MapPin, Server, RefreshCw } from "lucide-react";
 import TrackerLayout from "@/components/TrackerLayout";
 import TerminalCard from "@/components/TerminalCard";
 import { Button } from "@/components/ui/button";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
-
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
-  iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png",
-  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
-});
+import GlobeMap from "@/components/GlobeMap";
 
 const MapUpdater = ({ center }: { center: [number, number] }) => {
   const map = useMap();
