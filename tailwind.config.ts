@@ -93,6 +93,10 @@ export default {
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "pulse-glow": "pulse-glow 2s ease-in-out infinite",
+        "fade-in-up": "fade-in-up 0.5s ease-out forwards",
+        "scanline": "scanline 8s linear infinite",
+        "blink": "blink 1s step-end infinite",
       },
     },
   },
